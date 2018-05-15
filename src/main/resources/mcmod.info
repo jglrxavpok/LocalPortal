@@ -1,0 +1,16 @@
+[
+{
+  "modid": "localportal",
+  "name": "Local Portal",
+  "description": "TODO",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "TODO",
+  "updateJSON": "https://raw.githubusercontent.com/jglrxavpok/LocalPortal/master/updateCheck.json",
+  "authorList": ["jglrxavpok"],
+  "credits": "",
+  "logoFile": "TODO",
+  "screenshots": [],
+  "dependencies": ["forgelin"]
+}
+]
