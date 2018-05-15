@@ -18,7 +18,7 @@ import org.jglrxavpok.localportal.extensions.toRadians
 
 class TileEntityLocalPortal: TileEntity(), ITickable {
 
-    private var portalInfos = NoInfos
+    var portalInfos = NoInfos
     private var ticket: ForgeChunkManager.Ticket? = null
     private val originOfOtherPortal = BlockPos.MutableBlockPos(BlockPos.ORIGIN)
     private val lastKnownOrigin = BlockPos.MutableBlockPos(BlockPos.ORIGIN)
@@ -35,8 +35,6 @@ class TileEntityLocalPortal: TileEntity(), ITickable {
     }
 
     override fun update() {
-        if(world.isRemote)
-            return
 
         val prevPortalID = portalInfos.portalID
         prevOtherPos.setPos(originOfOtherPortal)
@@ -46,6 +44,8 @@ class TileEntityLocalPortal: TileEntity(), ITickable {
             return
         }
         portalInfos = newInfos
+        if(world.isRemote)
+            return
         val pair = PortalLocator.getPortalPair(portalInfos.portalID, world) ?: return
 
         val origin = getOriginPos()
@@ -80,7 +80,7 @@ class TileEntityLocalPortal: TileEntity(), ITickable {
         return infos
     }
 
-    private fun getOriginPos(): BlockPos.PooledMutableBlockPos {
+    fun getOriginPos(): BlockPos.PooledMutableBlockPos {
         val location = getLocationInFrame()
         val dy = -location.second
         val facing = world.getBlockState(pos).getValue(PortalFacing).rotateY()

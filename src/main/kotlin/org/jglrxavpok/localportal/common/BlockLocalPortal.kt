@@ -3,10 +3,13 @@ package org.jglrxavpok.localportal.common
 import net.minecraft.block.Block
 import net.minecraft.block.material.Material
 import net.minecraft.block.properties.PropertyEnum
+import net.minecraft.block.state.BlockFaceShape
 import net.minecraft.block.state.BlockStateContainer
 import net.minecraft.block.state.IBlockState
 import net.minecraft.entity.Entity
 import net.minecraft.tileentity.TileEntity
+import net.minecraft.util.BlockRenderLayer
+import net.minecraft.util.EnumBlockRenderType
 import net.minecraft.util.EnumFacing
 import net.minecraft.util.math.AxisAlignedBB
 import net.minecraft.util.math.BlockPos
@@ -53,5 +56,21 @@ object BlockLocalPortal: Block(Material.PORTAL) {
 
     override fun getCollisionBoundingBox(blockState: IBlockState?, worldIn: IBlockAccess?, pos: BlockPos?): AxisAlignedBB? {
         return NULL_AABB
+    }
+
+    override fun isOpaqueCube(state: IBlockState): Boolean {
+        return false
+    }
+
+    override fun isFullCube(state: IBlockState): Boolean {
+        return false
+    }
+
+    override fun getRenderType(state: IBlockState): EnumBlockRenderType {
+        return EnumBlockRenderType.ENTITYBLOCK_ANIMATED
+    }
+
+    override fun getBlockFaceShape(worldIn: IBlockAccess, state: IBlockState, pos: BlockPos, face: EnumFacing): BlockFaceShape {
+        return BlockFaceShape.UNDEFINED
     }
 }

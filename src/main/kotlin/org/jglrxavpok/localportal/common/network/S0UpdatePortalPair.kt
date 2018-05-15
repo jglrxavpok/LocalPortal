@@ -9,6 +9,7 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext
 import net.minecraftforge.fml.relauncher.Side
 import net.minecraftforge.fml.relauncher.SideOnly
+import org.jglrxavpok.localportal.LocalPortal
 import org.jglrxavpok.localportal.common.PortalPair
 
 class S0UpdatePortalPair(): IMessage {
@@ -37,6 +38,7 @@ class S0UpdatePortalPair(): IMessage {
         override fun onMessage(message: S0UpdatePortalPair, ctx: MessageContext): IMessage? {
             val pair = message.portalPair!!
             Minecraft.getMinecraft().world.setData(pair.mapName, pair)
+            LocalPortal.logger.debug("Updated portal pair ${pair.mapName} -> ${pair.hasSecond}")
             return null
         }
     }

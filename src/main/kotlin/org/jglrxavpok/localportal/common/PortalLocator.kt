@@ -203,6 +203,7 @@ object PortalLocator {
         world.setData(pair.mapName, pair)
         if(!world.isRemote) {
             LocalPortal.network.sendToDimension(S0UpdatePortalPair(pair), dimensionID)
+            //LocalPortal.network.sendToAll(S0UpdatePortalPair(pair))
         }
     }
 
@@ -217,8 +218,8 @@ object PortalLocator {
             }
         }
         pair.secondPortalOrigin.setPos(0,0,0)
-        updatePortalPair(pair, world, dimensionID)
         pair.hasSecond = false
+        updatePortalPair(pair, world, dimensionID)
     }
 
     data class PortalFrameInfos(val frameType: PortalFrame, val portalID: Int) {
