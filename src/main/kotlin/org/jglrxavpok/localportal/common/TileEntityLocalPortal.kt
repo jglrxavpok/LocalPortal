@@ -37,17 +37,18 @@ class TileEntityLocalPortal: TileEntity(), ITickable {
     override fun update() {
         if(world.isRemote)
             return
+
         val prevPortalID = portalInfos.portalID
         prevOtherPos.setPos(originOfOtherPortal)
-        portalInfos = readPortalInfos()
-        if(portalInfos == NoInfos) {
+        val newInfos = readPortalInfos()
+        if(portalInfos != NoInfos && newInfos == NoInfos) {
             world.destroyBlock(pos, false)
             return
         }
+        portalInfos = newInfos
         val pair = PortalLocator.getPortalPair(portalInfos.portalID, world) ?: return
 
         val origin = getOriginPos()
-        lastKnownOrigin.setPos(origin.x, origin.y, origin.z)
         originOfOtherPortal.setPos(origin) // reset in case other portal gets destroyed
         if(pair.firstPortalOrigin == origin) {
             if(pair.hasSecond) {
@@ -58,6 +59,7 @@ class TileEntityLocalPortal: TileEntity(), ITickable {
         } else {
             updateLinkTo(pair.firstPortalOrigin)
         }
+        lastKnownOrigin.setPos(origin.x, origin.y, origin.z)
         origin.release()
 
         if(portalInfos.portalID != prevPortalID) {
@@ -157,8 +159,10 @@ class TileEntityLocalPortal: TileEntity(), ITickable {
 
             val offset = getLocationInFrame()
             val otherPortal = PortalLocator.getFrameInfosAt(originOfOtherPortal, world)
-            if(otherPortal == NoInfos)
-                error("Other portal cannot be inexistent at $originOfOtherPortal")
+            if(otherPortal == NoInfos) {
+                LocalPortal.logger.error("Other portal cannot be inexistent at $originOfOtherPortal")
+                return
+            }
             val facing = otherPortal.frameType.facing
             val perpendicularFacing = facing.rotateY()
             val dx = -offset.first * perpendicularFacing.directionVec.x
@@ -187,14 +191,18 @@ class TileEntityLocalPortal: TileEntity(), ITickable {
             val x = correspondingBlock.x + .5f +offsetX + distanceInFrontOfPortal * facing.directionVec.x
             val y = correspondingBlock.y + .5f +offsetY
             val z = correspondingBlock.z + .5f +offsetZ + distanceInFrontOfPortal * facing.directionVec.z
-            println("Sending entity to $x $y $z next to $originOfOtherPortal from $pos")
+            LocalPortal.logger.debug("Sending entity to $x $y $z next to $originOfOtherPortal from $pos")
             entity.setPositionAndUpdate(x, y, z)
         }
     }
 
     override fun invalidate() {
-        super.invalidate()
         ForgeChunkManager.releaseTicket(ticket)
-        PortalLocator.breakPortalPair(portalInfos.portalID, lastKnownOrigin, world.provider.dimension, world)
+        if(!world.isRemote) {
+            if(lastKnownOrigin.x == pos.x && lastKnownOrigin.y+1 == pos.y && lastKnownOrigin.z == pos.z) {
+                PortalLocator.breakPortalPair(portalInfos.portalID, lastKnownOrigin, world.provider.dimension, world)
+            }
+        }
+        super.invalidate()
     }
 }

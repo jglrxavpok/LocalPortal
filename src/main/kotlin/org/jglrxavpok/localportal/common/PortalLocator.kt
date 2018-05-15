@@ -12,9 +12,9 @@ import org.jglrxavpok.localportal.common.network.S0UpdatePortalPair
 
 object PortalLocator {
 
-    const val PairSaveDataID = "${LocalPortal.ModID}:portal_pair"
+    const val PairSaveDataID = "${LocalPortal.ModID}_portal_pair"
 
-    private fun dataID(portalID: Int) = "$PairSaveDataID/$portalID"
+    private fun dataID(portalID: Int) = "${PairSaveDataID}_$portalID"
 
     fun getPortalPair(portalID: Int, world: World): PortalPair? {
         return world.loadData(PortalPair::class.java, dataID(portalID)) as? PortalPair
@@ -163,6 +163,26 @@ object PortalLocator {
     }
 
     fun createPortal(infos: PortalFrameInfos, pos: BlockPos, world: World, dimensionID: Int): Boolean {
+        val pair = getPortalPair(infos.portalID, world)
+        if(pair == null) {
+            val newPair = PortalPair(dataID(infos.portalID)).apply { firstPortalOrigin.setPos(pos) }
+            updatePortalPair(newPair, world, dimensionID)
+        } else {
+            if(pair.isClean) { // portals with given ID existed but were destroyed
+                pair.firstPortalOrigin.setPos(pos)
+                pair.hasSecond = false
+                pair.isClean = false
+            } else {
+                if(pair.hasSecond)
+                    return false
+                if(pair.firstPortalOrigin == pos)
+                    return false
+                pair.secondPortalOrigin.setPos(pos)
+                pair.hasSecond = true
+            }
+            updatePortalPair(pair, world, dimensionID)
+        }
+
         // place blocks
         val portalFacing = infos.frameType.facing
         val facing = infos.frameType.facing.rotateY()
@@ -175,30 +195,11 @@ object PortalLocator {
             }
         }
 
-        val pair = getPortalPair(infos.portalID, world)
-        if(pair == null) {
-            val newPair = PortalPair(dataID(infos.portalID)).apply { firstPortalOrigin.setPos(pos) }
-            updatePortalPair(newPair, world, dimensionID)
-        } else {
-            if(pair.isClean) { // portals with given ID existed but were destroyed
-                pair.firstPortalOrigin.setPos(pos)
-                pair.hasSecond = false
-                pair.isClean = false
-                updatePortalPair(pair, world, dimensionID)
-            } else {
-                if(pair.firstPortalOrigin == pos)
-                    return false
-                if(pair.hasSecond)
-                    return false
-                pair.secondPortalOrigin.setPos(pos)
-                pair.hasSecond = true
-                updatePortalPair(pair, world, dimensionID)
-            }
-        }
         return true
     }
 
     private fun updatePortalPair(pair: PortalPair, world: World, dimensionID: Int) {
+        pair.markDirty()
         world.setData(pair.mapName, pair)
         if(!world.isRemote) {
             LocalPortal.network.sendToDimension(S0UpdatePortalPair(pair), dimensionID)
@@ -211,12 +212,12 @@ object PortalLocator {
             if(pair.hasSecond) {
                 pair.firstPortalOrigin.setPos(pair.secondPortalOrigin)
             } else {
+                pair.firstPortalOrigin.setPos(0,0,0)
                 pair.isClean = true
             }
         }
         pair.secondPortalOrigin.setPos(0,0,0)
         updatePortalPair(pair, world, dimensionID)
-        println("break pair with ID $portalID - ${pair.isClean} - ${pair.hasSecond}")
         pair.hasSecond = false
     }
 
