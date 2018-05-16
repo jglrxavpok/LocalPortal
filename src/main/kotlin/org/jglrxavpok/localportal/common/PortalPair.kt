@@ -4,7 +4,7 @@ import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.util.math.BlockPos
 import net.minecraft.world.storage.WorldSavedData
 
-class PortalPair(name: String): WorldSavedData(name) {
+open class PortalPair(name: String): WorldSavedData(name) {
 
     val firstPortalOrigin: BlockPos.MutableBlockPos = BlockPos.MutableBlockPos(BlockPos.ORIGIN)
     val secondPortalOrigin: BlockPos.MutableBlockPos = BlockPos.MutableBlockPos(BlockPos.ORIGIN)
