@@ -1,20 +1,11 @@
 package org.jglrxavpok.localportal.client
 
 import net.minecraft.client.Minecraft
-import net.minecraft.client.renderer.GLAllocation
 import net.minecraft.client.renderer.GlStateManager
-import net.minecraft.client.renderer.RenderHelper
-import net.minecraft.client.renderer.Tessellator
-import net.minecraft.client.renderer.culling.Frustum
-import net.minecraft.client.renderer.texture.TextureMap
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats
-import net.minecraft.entity.Entity
-import net.minecraft.entity.passive.EntityCow
-import net.minecraft.util.BlockRenderLayer
-import net.minecraftforge.client.event.RenderWorldLastEvent
+import net.minecraft.util.math.MathHelper
+import net.minecraftforge.client.event.EntityViewRenderEvent
 import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.fml.client.registry.ClientRegistry
-import net.minecraftforge.fml.client.registry.RenderingRegistry
 import net.minecraftforge.fml.common.Mod
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import net.minecraftforge.fml.common.gameevent.TickEvent
@@ -23,20 +14,22 @@ import org.jglrxavpok.localportal.LocalPortal
 import org.jglrxavpok.localportal.common.*
 import org.jglrxavpok.localportal.common.PortalLocator.NoInfos
 import org.jglrxavpok.localportal.extensions.angleTo
+import org.jglrxavpok.localportal.extensions.toDegrees
+import org.jglrxavpok.localportal.extensions.toRadians
 import org.lwjgl.BufferUtils
-import org.lwjgl.opengl.GL11
 import org.lwjgl.opengl.GL11.*
-import org.lwjgl.opengl.GL11.GL_SCISSOR_TEST
-import org.lwjgl.opengl.GL11.glDisable
-import org.lwjgl.opengl.GL11.glStencilMask
-import java.nio.ByteBuffer
+import org.lwjgl.util.glu.Project
+import org.lwjgl.util.vector.Matrix4f
+import org.lwjgl.util.vector.Vector3f
+import kotlin.math.abs
 
 @Mod.EventBusSubscriber(value = arrayOf(Side.CLIENT), modid = LocalPortal.ModID)
 class Proxy: LocalPortalProxy() {
 
     private val portalRenderRequests = mutableListOf<PortalRenderRequest>()
     private val cameraEntity = EntityCamera()
-    private var lockRequests = false
+    private var renderingPortalView = false
+    private var nearPlane = 0.05f
 
     override fun preInit() {
         MinecraftForge.EVENT_BUS.register(this)
@@ -60,9 +53,18 @@ class Proxy: LocalPortalProxy() {
             val partialTicks = event.renderTickTime
             val time = System.nanoTime()
             val framebuffer = mc.framebuffer
-            lockRequests = true
+            renderingPortalView = true
+            val transformationMatrix = Matrix4f()
             for((portalIndex, request) in portalRenderRequests.withIndex()) {
                 val texID = getTextureOrLoad(portalIndex)
+
+                if(request.infos == NoInfos)
+                    continue
+                val origin = if(request.isFirstInPair) request.pair.firstPortalOrigin else request.pair.secondPortalOrigin
+                val otherOrigin = if(!request.isFirstInPair) request.pair.firstPortalOrigin else request.pair.secondPortalOrigin
+                val otherFrame = PortalLocator.getFrameInfosAt(otherOrigin, mc.world)
+                if(otherFrame == NoInfos)
+                    continue
 
                 val settings = mc.gameSettings
                 val fovSave = settings.fovSetting
@@ -76,24 +78,46 @@ class Proxy: LocalPortalProxy() {
                 mc.renderViewEntity = cameraEntity
                 mc.displayWidth = PortalFrameBufferWidth
                 mc.displayHeight = PortalFrameBufferHeight
-                val origin = if(request.isFirstInPair) request.pair.firstPortalOrigin else request.pair.secondPortalOrigin
-                val otherOrigin = if(!request.isFirstInPair) request.pair.firstPortalOrigin else request.pair.secondPortalOrigin
-                val otherFacing = PortalLocator.getFrameInfosAt(otherOrigin, mc.world).frameType.facing
-                cameraEntity.posX = otherOrigin.x+otherFacing.directionVec.x.toDouble()
-                cameraEntity.posY = otherOrigin.y+prevRenderEntity.eyeHeight.toDouble()
-                cameraEntity.posZ = otherOrigin.z+otherFacing.directionVec.z.toDouble()
+                val otherFacing = otherFrame.frameType.facing
+                val renderViewX = prevRenderEntity.posX
+                val renderViewY = prevRenderEntity.posY
+                val renderViewZ = prevRenderEntity.posZ
+                val renderViewPitch = prevRenderEntity.rotationPitch
+                val renderViewYaw = prevRenderEntity.rotationYaw
+                val infos = request.infos
+                val angleDiff = infos.frameType.facing.angleTo(otherFacing)
+                val dy = renderViewY - origin.y -.5
+                val dx = renderViewX - origin.x -.5
+                val dz = renderViewZ - origin.z -.5
+
+                val yaw = prevRenderEntity.rotationYaw + angleDiff + 180f
+                val pitch = prevRenderEntity.rotationPitch
+
+                val portalDx = dx
+                val portalDy = dy
+                val portalDz = dz
+
+                val cos = MathHelper.cos(angleDiff.toRadians().toFloat())
+                val sin = MathHelper.sin(angleDiff.toRadians().toFloat())
+                val rotatedDx = portalDx * cos + portalDz * sin
+                val rotatedDz = -portalDx * sin + portalDz * cos
+                cameraEntity.posX = otherOrigin.x+.5-rotatedDx
+                cameraEntity.posY = otherOrigin.y.toDouble()+.5f+portalDy+1f
+                cameraEntity.posZ = otherOrigin.z+.5-rotatedDz
                 cameraEntity.lastTickPosX = cameraEntity.posX
                 cameraEntity.lastTickPosY = cameraEntity.posY
                 cameraEntity.lastTickPosZ = cameraEntity.posZ
-                val angleDiff = request.infos.frameType.facing.angleTo(otherFacing) + 180f
-                cameraEntity.rotationPitch = prevRenderEntity.rotationPitch
-                cameraEntity.rotationYaw = prevRenderEntity.rotationYaw + angleDiff.toFloat()
-                cameraEntity.rotationYawHead = prevRenderEntity.rotationYawHead + angleDiff.toFloat()
+                cameraEntity.rotationPitch = pitch//renderViewPitch
+                cameraEntity.rotationYaw = yaw.toFloat()
+                cameraEntity.rotationYawHead = cameraEntity.rotationYaw
                 cameraEntity.prevRotationPitch = cameraEntity.rotationPitch
                 cameraEntity.prevRotationYaw = cameraEntity.rotationYaw
                 settings.fovSetting = 70f
+                nearPlane = (abs(portalDx * otherFacing.directionVec.x) + abs(portalDz * otherFacing.directionVec.z)).toFloat()
 
                 renderer.renderWorld(1f, time+1)
+
+                nearPlane = 0.05f
 
                 mc.renderViewEntity = prevRenderEntity
                 mc.displayWidth = prevW
@@ -106,8 +130,22 @@ class Proxy: LocalPortalProxy() {
                 glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0,0, PortalFrameBufferWidth, PortalFrameBufferHeight, 0)
                 GlStateManager.bindTexture(0)
             }
-            lockRequests = false
+            renderingPortalView = false
             portalRenderRequests.clear()
+        }
+    }
+
+    @SubscribeEvent
+    fun onCameraSetup(event: EntityViewRenderEvent.CameraSetup) {
+        if (renderingPortalView) { // reset projection matrix to change the nearPlane
+            GlStateManager.matrixMode(GL_PROJECTION)
+            GlStateManager.loadIdentity()
+            val mc = Minecraft.getMinecraft()
+            val fov = 70f
+            val farPlaneDistance = (mc.gameSettings.renderDistanceChunks * 16).toFloat()
+            Project.gluPerspective(fov, 1f, nearPlane, farPlaneDistance * MathHelper.SQRT_2)
+
+            GlStateManager.matrixMode(GL_MODELVIEW)
         }
     }
 
@@ -140,10 +178,13 @@ class Proxy: LocalPortalProxy() {
         // TODO: put this in a config file
         val PortalFrameBufferWidth = 1080/2
         val PortalFrameBufferHeight = 1080/2
+
+        val UpVector = Vector3f(0f, 1f, 0f)
+        val RightVector = Vector3f(1f, 0f, 0f)
     }
 
     override fun requestPortalRender(portalRenderRequest: PortalRenderRequest): Int {
-        if(lockRequests) {
+        if(renderingPortalView) {
             return 0
         }
         if(portalRenderRequest == EmptyPortalRequest) {

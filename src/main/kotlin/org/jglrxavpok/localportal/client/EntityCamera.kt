@@ -1,9 +1,13 @@
 package org.jglrxavpok.localportal.client
 
+import net.minecraft.client.Minecraft
 import net.minecraft.entity.Entity
 import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.world.World
+import net.minecraftforge.fml.relauncher.Side
+import net.minecraftforge.fml.relauncher.SideOnly
 
+@SideOnly(Side.CLIENT)
 class EntityCamera: Entity(null) {
 
     init {
@@ -20,5 +24,9 @@ class EntityCamera: Entity(null) {
 
     override fun entityInit() {
 
+    }
+
+    override fun getEyeHeight(): Float {
+        return Minecraft.getMinecraft().player.defaultEyeHeight
     }
 }
