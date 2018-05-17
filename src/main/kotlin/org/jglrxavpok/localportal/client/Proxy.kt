@@ -23,6 +23,7 @@ import org.jglrxavpok.localportal.LocalPortal
 import org.jglrxavpok.localportal.common.*
 import org.jglrxavpok.localportal.common.PortalLocator.NoInfos
 import org.jglrxavpok.localportal.extensions.angleTo
+import org.lwjgl.BufferUtils
 import org.lwjgl.opengl.GL11
 import org.lwjgl.opengl.GL11.*
 import org.lwjgl.opengl.GL11.GL_SCISSOR_TEST
@@ -92,7 +93,7 @@ class Proxy: LocalPortalProxy() {
                 cameraEntity.prevRotationYaw = cameraEntity.rotationYaw
                 settings.fovSetting = 70f
 
-                renderer.renderWorld(1f, time+ 16000)
+                renderer.renderWorld(1f, time+1)
 
                 mc.renderViewEntity = prevRenderEntity
                 mc.displayWidth = prevW
@@ -101,9 +102,9 @@ class Proxy: LocalPortalProxy() {
                 settings.hideGUI = hideGuiSave
                 settings.fovSetting = fovSave
 
-                glBindTexture(GL_TEXTURE_2D, texID)
+                GlStateManager.bindTexture(texID)
                 glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0,0, PortalFrameBufferWidth, PortalFrameBufferHeight, 0)
-                glBindTexture(GL_TEXTURE_2D, 0)
+                GlStateManager.bindTexture(0)
             }
             lockRequests = false
             portalRenderRequests.clear()
@@ -120,12 +121,12 @@ class Proxy: LocalPortalProxy() {
     }
 
     private fun generatePortalTexture(portalIndex: Int) {
-        val texID = glGenTextures()
-        glBindTexture(GL_TEXTURE_2D, texID)
+        val texID = GlStateManager.generateTexture()
+        GlStateManager.bindTexture(texID)
         // empty texture
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, PortalFrameBufferWidth, PortalFrameBufferHeight, 0, GL_RGBA, GL_UNSIGNED_INT, null as? ByteBuffer?)
+        GlStateManager.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, PortalFrameBufferWidth, PortalFrameBufferHeight, 0, GL_RGB, GL_UNSIGNED_INT, BufferUtils.createIntBuffer(3 * PortalFrameBufferWidth* PortalFrameBufferHeight))
+        GlStateManager.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        GlStateManager.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
         PortalTextureIDs[portalIndex] = texID
     }
 

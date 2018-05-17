@@ -38,14 +38,16 @@ object LocalPortalRenderer: TileEntitySpecialRenderer<TileEntityLocalPortal>() {
             }
 
         origin.release()
-        glBindTexture(GL_TEXTURE_2D, Proxy.Companion.PortalTextureIDs[portalRenderIndex])
+        GlStateManager.bindTexture(Proxy.Companion.PortalTextureIDs[portalRenderIndex])
         GlStateManager.disableCull()
         GlStateManager.disableLighting()
         GlStateManager.disableBlend()
         val tessellator = Tessellator.getInstance()
         val buffer = tessellator.buffer
         val location = te.getLocationInFrame()
-        val minU = (-location.first + 1.0) / 3.0
+        val dirVec = infos.frameType.facing.rotateY().directionVec
+        val horizontalDirection = dirVec.x+dirVec.z // only one of them is not nil
+        val minU = (-horizontalDirection*location.first + 1.0) / 3.0
         val minV = (location.second) / 3.0
         val maxU = minU + (1.0/3.0)
         val maxV = minV + (1.0/3.0)
@@ -71,6 +73,9 @@ object LocalPortalRenderer: TileEntitySpecialRenderer<TileEntityLocalPortal>() {
         buffer.pos(1.0, 1.0, 0.0).tex(maxU, maxV).endVertex()
         tessellator.draw()
 
+        GlStateManager.enableCull()
+        GlStateManager.enableLighting()
+        GlStateManager.enableBlend()
         GlStateManager.popMatrix()
     }
 
