@@ -8,7 +8,7 @@
   "url": "TODO",
   "updateJSON": "https://raw.githubusercontent.com/jglrxavpok/LocalPortal/master/updateCheck.json",
   "authorList": ["jglrxavpok"],
-  "credits": "",
+  "credits": "UpcraftLP for Correlated Dimensional Systems which helped to make the world render through portals",
   "logoFile": "TODO",
   "screenshots": [],
   "dependencies": ["forgelin"]
