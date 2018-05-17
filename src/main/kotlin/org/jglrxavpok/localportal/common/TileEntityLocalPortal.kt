@@ -89,7 +89,7 @@ class TileEntityLocalPortal: TileEntity(), ITickable {
         return BlockPos.PooledMutableBlockPos.retain(pos.add(dx, dy-1, dz))
     }
 
-    private fun getLocationInFrame(): Pair<Int, Int> {
+    fun getLocationInFrame(): Pair<Int, Int> {
         var y = 0
         while(world.getBlockState(pos.up(y)).block == BlockLocalPortal) {
             y++

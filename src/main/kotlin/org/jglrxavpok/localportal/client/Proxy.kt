@@ -8,6 +8,8 @@ import net.minecraft.client.renderer.Tessellator
 import net.minecraft.client.renderer.culling.Frustum
 import net.minecraft.client.renderer.texture.TextureMap
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats
+import net.minecraft.entity.Entity
+import net.minecraft.entity.passive.EntityCow
 import net.minecraft.util.BlockRenderLayer
 import net.minecraftforge.client.event.RenderWorldLastEvent
 import net.minecraftforge.common.MinecraftForge
@@ -20,6 +22,7 @@ import net.minecraftforge.fml.relauncher.Side
 import org.jglrxavpok.localportal.LocalPortal
 import org.jglrxavpok.localportal.common.*
 import org.jglrxavpok.localportal.common.PortalLocator.NoInfos
+import org.jglrxavpok.localportal.extensions.angleTo
 import org.lwjgl.opengl.GL11
 import org.lwjgl.opengl.GL11.*
 import org.lwjgl.opengl.GL11.GL_SCISSOR_TEST
@@ -27,11 +30,12 @@ import org.lwjgl.opengl.GL11.glDisable
 import org.lwjgl.opengl.GL11.glStencilMask
 import java.nio.ByteBuffer
 
-
 @Mod.EventBusSubscriber(value = arrayOf(Side.CLIENT), modid = LocalPortal.ModID)
 class Proxy: LocalPortalProxy() {
 
     private val portalRenderRequests = mutableListOf<PortalRenderRequest>()
+    private val cameraEntity = EntityCamera()
+    private var lockRequests = false
 
     override fun preInit() {
         MinecraftForge.EVENT_BUS.register(this)
@@ -47,10 +51,61 @@ class Proxy: LocalPortalProxy() {
     fun preRenderWorld(event: TickEvent.RenderTickEvent) {
         if(event.phase == TickEvent.Phase.START) {
             // TODO: update/fill textures
+            val mc = Minecraft.getMinecraft()
+            if(mc.world == null)
+                return
+            cameraEntity.world = mc.world
+            val renderer = mc.entityRenderer
+            val partialTicks = event.renderTickTime
+            val time = System.nanoTime()
+            val framebuffer = mc.framebuffer
+            lockRequests = true
             for((portalIndex, request) in portalRenderRequests.withIndex()) {
                 val texID = getTextureOrLoad(portalIndex)
 
+                val settings = mc.gameSettings
+                val fovSave = settings.fovSetting
+                val hideGuiSave = settings.hideGUI
+                val thirdPersonViewSave = settings.thirdPersonView
+                val prevW = framebuffer.framebufferWidth
+                val prevH = framebuffer.framebufferHeight
+                val prevRenderEntity = mc.renderViewEntity!!
+                settings.thirdPersonView = 0
+                settings.hideGUI = true
+                mc.renderViewEntity = cameraEntity
+                mc.displayWidth = PortalFrameBufferWidth
+                mc.displayHeight = PortalFrameBufferHeight
+                val origin = if(request.isFirstInPair) request.pair.firstPortalOrigin else request.pair.secondPortalOrigin
+                val otherOrigin = if(!request.isFirstInPair) request.pair.firstPortalOrigin else request.pair.secondPortalOrigin
+                val otherFacing = PortalLocator.getFrameInfosAt(otherOrigin, mc.world).frameType.facing
+                cameraEntity.posX = otherOrigin.x+otherFacing.directionVec.x.toDouble()
+                cameraEntity.posY = otherOrigin.y+prevRenderEntity.eyeHeight.toDouble()
+                cameraEntity.posZ = otherOrigin.z+otherFacing.directionVec.z.toDouble()
+                cameraEntity.lastTickPosX = cameraEntity.posX
+                cameraEntity.lastTickPosY = cameraEntity.posY
+                cameraEntity.lastTickPosZ = cameraEntity.posZ
+                val angleDiff = request.infos.frameType.facing.angleTo(otherFacing) + 180f
+                cameraEntity.rotationPitch = prevRenderEntity.rotationPitch
+                cameraEntity.rotationYaw = prevRenderEntity.rotationYaw + angleDiff.toFloat()
+                cameraEntity.rotationYawHead = prevRenderEntity.rotationYawHead + angleDiff.toFloat()
+                cameraEntity.prevRotationPitch = cameraEntity.rotationPitch
+                cameraEntity.prevRotationYaw = cameraEntity.rotationYaw
+                settings.fovSetting = 70f
+
+                renderer.renderWorld(1f, time+ 16000)
+
+                mc.renderViewEntity = prevRenderEntity
+                mc.displayWidth = prevW
+                mc.displayHeight = prevH
+                settings.thirdPersonView = thirdPersonViewSave
+                settings.hideGUI = hideGuiSave
+                settings.fovSetting = fovSave
+
+                glBindTexture(GL_TEXTURE_2D, texID)
+                glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0,0, PortalFrameBufferWidth, PortalFrameBufferHeight, 0)
+                glBindTexture(GL_TEXTURE_2D, 0)
             }
+            lockRequests = false
             portalRenderRequests.clear()
         }
     }
@@ -82,11 +137,14 @@ class Proxy: LocalPortalProxy() {
         val PortalTextureIDs = IntArray(255).apply { fill(-1) }
 
         // TODO: put this in a config file
-        val PortalFrameBufferWidth = 1920/2
+        val PortalFrameBufferWidth = 1080/2
         val PortalFrameBufferHeight = 1080/2
     }
 
     override fun requestPortalRender(portalRenderRequest: PortalRenderRequest): Int {
+        if(lockRequests) {
+            return 0
+        }
         if(portalRenderRequest == EmptyPortalRequest) {
             return 0
         }

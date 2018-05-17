@@ -14,21 +14,15 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper
-import net.minecraftforge.fml.common.registry.EntityEntry
-import net.minecraftforge.fml.common.registry.ForgeRegistries
 import net.minecraftforge.fml.common.registry.GameRegistry
 import org.apache.logging.log4j.Logger
 import org.jglrxavpok.localportal.common.*
 import net.minecraft.init.Blocks as MCBlocks
 import net.minecraft.init.Items as MCItems
-import net.minecraftforge.items.IItemHandler
 import net.minecraftforge.common.capabilities.CapabilityInject
 
-
-
-
 @Mod(modLanguageAdapter = "net.shadowfacts.forgelin.KotlinAdapter", modid = LocalPortal.ModID, dependencies = "required-after:forgelin;",
-        name = "Local PortalFrame", version = "1.0.0-indev", updateJSON = "https://raw.githubusercontent.com/jglrxavpok/LocalPortal/master/updateCheck.json")
+        name = "Local Portal", version = "1.0.0-indev", updateJSON = "https://raw.githubusercontent.com/jglrxavpok/LocalPortal/master/updateCheck.json")
 object LocalPortal {
     const val ModID = "localportal"
 
