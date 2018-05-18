@@ -89,3 +89,5 @@ fun Matrix4f.transform(x: Float, y: Float, z: Float, w: Float): Vector4f {
     result.w = x*this.m30+y*this.m31+z*this.m32+w*this.m33
     return result
 }
+
+fun Vec3d.dot(x: Double, y: Double, z: Double) = this.x*x+this.y*y+this.z*z
