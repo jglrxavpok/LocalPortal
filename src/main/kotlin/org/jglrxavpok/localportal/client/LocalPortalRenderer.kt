@@ -37,7 +37,14 @@ object LocalPortalRenderer: TileEntitySpecialRenderer<TileEntityLocalPortal>() {
         val pair = PortalLocator.getPortalPair(portalID, world)
         val origin = te.getOriginPos()
 
+        val mc = Minecraft.getMinecraft()
+
         var dirVec: Vec3i
+        glDisable(GL_SCISSOR_TEST)
+        glClearStencil(0xFF)
+        glStencilMask(0xFF)
+        glClear(GL_STENCIL_BUFFER_BIT)
+        glEnable(GL_STENCIL_TEST)
         val portalRenderIndex =
             if(infos == NoInfos || (pair == null || !pair.hasSecond)) {
                 glStencilFunc(GL_ALWAYS, 1, 0xFF)
@@ -50,10 +57,11 @@ object LocalPortalRenderer: TileEntitySpecialRenderer<TileEntityLocalPortal>() {
                 dirVec = infos.frameType.facing.rotateY().directionVec
                 portalIndex
             }
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE)
 
         origin.release()
         GlStateManager.color(1f, 1f, 1f, 1f)
-        GlStateManager.bindTexture(Proxy.Companion.PortalTextureIDs[portalRenderIndex])
+
         GlStateManager.disableLighting()
         GlStateManager.disableBlend()
         val tessellator = Tessellator.getInstance()
@@ -74,56 +82,67 @@ object LocalPortalRenderer: TileEntitySpecialRenderer<TileEntityLocalPortal>() {
         //val maxUInverted = minUInverted + (1.0/3.0)
         GlStateManager.getFloat(2983, ModelviewBuffer)
         GlStateManager.getFloat(2982, ProjectionBuffer)
-        buffer.begin(GL_QUADS, DefaultVertexFormats.POSITION_TEX)
 
-        modelviewMatrix.loadTranspose(ModelviewBuffer)
-        projectionMatrix.loadTranspose(ProjectionBuffer)
 
-        ModelviewBuffer.rewind()
-        ProjectionBuffer.rewind()
+        GlStateManager.colorMask(false, false, false, false)
+        //GlStateManager.depthMask(false)
 
-        val mvpMatrix = projectionMatrix * modelviewMatrix
-
-        // // Perspective divide (Translate to NDC - (-1, 1))
-        //    float2 uv = i.pos_frag.xy / i.pos_frag.w;
-        //    // Map -1, 1 range to 0, 1 tex coord range
-        //    uv = (uv + float2(1.0)) * 0.5;
-        val posMinFrag = mvpMatrix.transform(0f, 0f, 0f, 1f)
-        val posMaxFrag = mvpMatrix.transform(1f, 1f, 1f, 1f)
-        val maxU = (posMinFrag.x / posMinFrag.w + 1.0) * 0.5 * dU + lowerU
-        val minU = (posMaxFrag.x / posMaxFrag.w + 1.0) * 0.5 * dV + lowerV
-
-        val minV = (posMinFrag.y / posMinFrag.w + 1.0) * 0.5 * dU + lowerU
-        val maxV = (posMaxFrag.y / posMaxFrag.w + 1.0) * 0.5 * dV + lowerV
-
-        // TODO
-        val minUInverted = minU
-        val maxUInverted = maxU
+        buffer.begin(GL_QUADS, DefaultVertexFormats.POSITION)
         if(dirVec.x != 0) {
-            buffer.pos(0.0, 1.0, 0.0).tex(maxU, maxV).endVertex()
-            buffer.pos(1.0, 1.0, 0.0).tex(minU, maxV).endVertex()
-            buffer.pos(1.0, 0.0, 0.0).tex(minU, minV).endVertex()
-            buffer.pos(0.0, 0.0, 0.0).tex(maxU, minV).endVertex()
+            buffer.pos(0.0, 1.0, 0.0).endVertex()
+            buffer.pos(1.0, 1.0, 0.0).endVertex()
+            buffer.pos(1.0, 0.0, 0.0).endVertex()
+            buffer.pos(0.0, 0.0, 0.0).endVertex()
 
-            buffer.pos(0.0, 0.0, 1.0).tex(minUInverted, minV).endVertex()
-            buffer.pos(1.0, 0.0, 1.0).tex(maxUInverted, minV).endVertex()
-            buffer.pos(1.0, 1.0, 1.0).tex(maxUInverted, maxV).endVertex()
-            buffer.pos(0.0, 1.0, 1.0).tex(minUInverted, maxV).endVertex()
+            buffer.pos(0.0, 0.0, 1.0).endVertex()
+            buffer.pos(1.0, 0.0, 1.0).endVertex()
+            buffer.pos(1.0, 1.0, 1.0).endVertex()
+            buffer.pos(0.0, 1.0, 1.0).endVertex()
         }
 
         if(dirVec.z != 0) {
-            buffer.pos(0.0, 0.0, 0.0).tex(minUInverted, minV).endVertex()
-            buffer.pos(0.0, 0.0, 1.0).tex(maxUInverted, minV).endVertex()
-            buffer.pos(0.0, 1.0, 1.0).tex(maxUInverted, maxV).endVertex()
-            buffer.pos(0.0, 1.0, 0.0).tex(minUInverted, maxV).endVertex()
+            buffer.pos(0.0, 0.0, 0.0).endVertex()
+            buffer.pos(0.0, 0.0, 1.0).endVertex()
+            buffer.pos(0.0, 1.0, 1.0).endVertex()
+            buffer.pos(0.0, 1.0, 0.0).endVertex()
 
-            buffer.pos(1.0, 1.0, 0.0).tex(maxU, maxV).endVertex()
-            buffer.pos(1.0, 1.0, 1.0).tex(minU, maxV).endVertex()
-            buffer.pos(1.0, 0.0, 1.0).tex(minU, minV).endVertex()
-            buffer.pos(1.0, 0.0, 0.0).tex(maxU, minV).endVertex()
+            buffer.pos(1.0, 1.0, 0.0).endVertex()
+            buffer.pos(1.0, 1.0, 1.0).endVertex()
+            buffer.pos(1.0, 0.0, 1.0).endVertex()
+            buffer.pos(1.0, 0.0, 0.0).endVertex()
         }
 
         tessellator.draw()
+        GlStateManager.depthMask(true)
+        GlStateManager.colorMask(true, true, true, true)
+        GlStateManager.disableDepth()
+        GlStateManager.disableCull()
+
+        GlStateManager.matrixMode(GL_MODELVIEW)
+        GlStateManager.pushMatrix()
+        GlStateManager.loadIdentity()
+
+        GlStateManager.matrixMode(GL_PROJECTION)
+        GlStateManager.pushMatrix()
+        GlStateManager.loadIdentity()
+        glEnable(GL_STENCIL_TEST)
+        glStencilFunc(GL_EQUAL, 1+portalRenderIndex, 0xFF)
+        glStencilMask(0x0)
+        GlStateManager.bindTexture(Proxy.Companion.PortalTextureIDs[portalRenderIndex])
+        buffer.begin(GL_QUADS, DefaultVertexFormats.POSITION_TEX)
+        buffer.pos(-1.0, -1.0, 1.0).tex(0.0, 0.0).endVertex()
+        buffer.pos(1.0, -1.0, 1.0).tex(1.0, 0.0).endVertex()
+        buffer.pos(1.0, 1.0, 1.0).tex(1.0, 1.0).endVertex()
+        buffer.pos(-1.0, 1.0, 1.0).tex(0.0, 1.0).endVertex()
+        tessellator.draw()
+        GlStateManager.enableDepth()
+        GlStateManager.enableCull()
+        glDisable(GL_STENCIL_TEST)
+
+        GlStateManager.popMatrix()
+        GlStateManager.matrixMode(GL_MODELVIEW)
+        GlStateManager.popMatrix()
+
         GlStateManager.enableLighting()
         GlStateManager.enableBlend()
         GlStateManager.popMatrix()

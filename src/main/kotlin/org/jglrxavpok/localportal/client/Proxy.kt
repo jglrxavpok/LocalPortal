@@ -44,15 +44,18 @@ class Proxy: LocalPortalProxy() {
     @SubscribeEvent
     fun preRenderWorld(event: TickEvent.RenderTickEvent) {
         if(event.phase == TickEvent.Phase.START) {
+
             // TODO: update/fill textures
             val mc = Minecraft.getMinecraft()
+            val framebuffer = mc.framebuffer
+            if(!framebuffer.isStencilEnabled)
+                framebuffer.enableStencil()
             if(mc.world == null)
                 return
             cameraEntity.world = mc.world
             val renderer = mc.entityRenderer
             val partialTicks = event.renderTickTime
             val time = System.nanoTime()
-            val framebuffer = mc.framebuffer
             renderingPortalView = true
             val transformationMatrix = Matrix4f()
             for((portalIndex, request) in portalRenderRequests.withIndex()) {
@@ -101,9 +104,9 @@ class Proxy: LocalPortalProxy() {
                 val sin = MathHelper.sin(angleDiff.toRadians().toFloat())
                 val rotatedDx = portalDx * cos + portalDz * sin
                 val rotatedDz = -portalDx * sin + portalDz * cos
-                cameraEntity.posX = otherOrigin.x+.5-rotatedDx
-                cameraEntity.posY = otherOrigin.y.toDouble()+.5f+portalDy+1f
-                cameraEntity.posZ = otherOrigin.z+.5-rotatedDz
+                cameraEntity.posX = otherOrigin.x+.5+rotatedDx + otherFacing.directionVec.x
+                cameraEntity.posY = otherOrigin.y.toDouble()+.5f+portalDy
+                cameraEntity.posZ = otherOrigin.z+.5+rotatedDz + otherFacing.directionVec.z
                 cameraEntity.lastTickPosX = cameraEntity.posX
                 cameraEntity.lastTickPosY = cameraEntity.posY
                 cameraEntity.lastTickPosZ = cameraEntity.posZ
@@ -112,8 +115,8 @@ class Proxy: LocalPortalProxy() {
                 cameraEntity.rotationYawHead = cameraEntity.rotationYaw
                 cameraEntity.prevRotationPitch = cameraEntity.rotationPitch
                 cameraEntity.prevRotationYaw = cameraEntity.rotationYaw
-                settings.fovSetting = 70f
-                nearPlane = (abs(portalDx * otherFacing.directionVec.x) + abs(portalDz * otherFacing.directionVec.z)).toFloat()
+          //      settings.fovSetting = 70f
+                nearPlane = (abs(rotatedDx * otherFacing.directionVec.x) + abs(rotatedDz * otherFacing.directionVec.z)).toFloat()+1f
 
                 renderer.renderWorld(1f, time+1)
 
@@ -141,7 +144,7 @@ class Proxy: LocalPortalProxy() {
             GlStateManager.matrixMode(GL_PROJECTION)
             GlStateManager.loadIdentity()
             val mc = Minecraft.getMinecraft()
-            val fov = 70f
+            val fov = mc.gameSettings.fovSetting
             val farPlaneDistance = (mc.gameSettings.renderDistanceChunks * 16).toFloat()
             Project.gluPerspective(fov, 1f, nearPlane, farPlaneDistance * MathHelper.SQRT_2)
 
