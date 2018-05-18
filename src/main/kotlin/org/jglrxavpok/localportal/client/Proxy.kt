@@ -52,12 +52,14 @@ class Proxy: LocalPortalProxy() {
                 framebuffer.enableStencil()
             if(mc.world == null)
                 return
+            if(!mc.inGameHasFocus)
+                return
             cameraEntity.world = mc.world
             val renderer = mc.entityRenderer
             val partialTicks = event.renderTickTime
             val time = System.nanoTime()
             renderingPortalView = true
-            val transformationMatrix = Matrix4f()
+
             for((portalIndex, request) in portalRenderRequests.withIndex()) {
                 val texID = getTextureOrLoad(portalIndex)
 
@@ -122,7 +124,7 @@ class Proxy: LocalPortalProxy() {
 
 
                 // TODO: loadEntityShader is called by setRenderViewEntity -> allows for special effects on the output!
-                renderer.renderWorld(1f, time+1)
+                renderer.renderWorld(1f, System.nanoTime()+1)
 
                 nearPlane = 0.05f
 

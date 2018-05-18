@@ -66,26 +66,8 @@ object LocalPortalRenderer: TileEntitySpecialRenderer<TileEntityLocalPortal>() {
         GlStateManager.disableBlend()
         val tessellator = Tessellator.getInstance()
         val buffer = tessellator.buffer
-        val location = te.getLocationInFrame()
-        val horizontalDirection = dirVec.x+dirVec.z // only one of them is not nil
-        val lowerU = 0f//(-horizontalDirection*location.first + 1.0) / 3.0
-        val upperU = 1f//lowerU + (1.0/3.0)
-
-        // http://tomhulton.blogspot.fr/2015/08/portal-rendering-with-offscreen-render.html
-        val lowerV = 0f//(location.second) / 3.0
-        val upperV = 1f//lowerV + (1.0/3.0)
-
-        val dU = abs(upperU - lowerU)
-        val dV = abs(upperV - lowerV)
-
-        //val minUInverted = (horizontalDirection*location.first + 1.0) / 3.0
-        //val maxUInverted = minUInverted + (1.0/3.0)
-        GlStateManager.getFloat(2983, ModelviewBuffer)
-        GlStateManager.getFloat(2982, ProjectionBuffer)
-
 
         GlStateManager.colorMask(false, false, false, false)
-        //GlStateManager.depthMask(false)
 
         buffer.begin(GL_QUADS, DefaultVertexFormats.POSITION)
         if(dirVec.z < 0) {
@@ -117,7 +99,6 @@ object LocalPortalRenderer: TileEntitySpecialRenderer<TileEntityLocalPortal>() {
         }
 
         tessellator.draw()
-        GlStateManager.depthMask(true)
         GlStateManager.colorMask(true, true, true, true)
         GlStateManager.disableDepth()
         GlStateManager.disableCull()
@@ -131,7 +112,6 @@ object LocalPortalRenderer: TileEntitySpecialRenderer<TileEntityLocalPortal>() {
         GlStateManager.loadIdentity()
 
         glEnable(GL_STENCIL_TEST)
-        //glStencilFunc(GL_EQUAL, 1+portalRenderIndex, 0xFF)
         glStencilFunc(GL_EQUAL, 1+portalRenderIndex, 0xFF)
         glStencilMask(0x0)
 
