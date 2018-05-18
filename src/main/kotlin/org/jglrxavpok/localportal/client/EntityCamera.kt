@@ -27,6 +27,6 @@ class EntityCamera: Entity(null) {
     }
 
     override fun getEyeHeight(): Float {
-        return Minecraft.getMinecraft().player.defaultEyeHeight
+        return 0f
     }
 }

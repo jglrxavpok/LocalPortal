@@ -70,6 +70,7 @@ class Proxy: LocalPortalProxy() {
                     continue
 
                 val settings = mc.gameSettings
+                val renderDistanceSave = settings.renderDistanceChunks
                 val fovSave = settings.fovSetting
                 val hideGuiSave = settings.hideGUI
                 val thirdPersonViewSave = settings.thirdPersonView
@@ -105,19 +106,22 @@ class Proxy: LocalPortalProxy() {
                 val rotatedDx = portalDx * cos + portalDz * sin
                 val rotatedDz = -portalDx * sin + portalDz * cos
                 cameraEntity.posX = otherOrigin.x+.5+rotatedDx + otherFacing.directionVec.x
-                cameraEntity.posY = otherOrigin.y.toDouble()+.5f+portalDy
+                cameraEntity.posY = otherOrigin.y.toDouble()+.5f+portalDy + prevRenderEntity.eyeHeight
                 cameraEntity.posZ = otherOrigin.z+.5+rotatedDz + otherFacing.directionVec.z
                 cameraEntity.lastTickPosX = cameraEntity.posX
                 cameraEntity.lastTickPosY = cameraEntity.posY
                 cameraEntity.lastTickPosZ = cameraEntity.posZ
                 cameraEntity.rotationPitch = pitch//renderViewPitch
                 cameraEntity.rotationYaw = yaw.toFloat()
-                cameraEntity.rotationYawHead = cameraEntity.rotationYaw
+                cameraEntity.rotationYawHead = prevRenderEntity.rotationYawHead
                 cameraEntity.prevRotationPitch = cameraEntity.rotationPitch
                 cameraEntity.prevRotationYaw = cameraEntity.rotationYaw
           //      settings.fovSetting = 70f
-                nearPlane = (abs(rotatedDx * otherFacing.directionVec.x) + abs(rotatedDz * otherFacing.directionVec.z)).toFloat()+1f
+                val dist = Math.sqrt(portalDx*portalDx + portalDz*portalDz)
+                nearPlane = dist.toFloat()-0.05f
 
+
+                // TODO: loadEntityShader is called by setRenderViewEntity -> allows for special effects on the output!
                 renderer.renderWorld(1f, time+1)
 
                 nearPlane = 0.05f
@@ -128,6 +132,7 @@ class Proxy: LocalPortalProxy() {
                 settings.thirdPersonView = thirdPersonViewSave
                 settings.hideGUI = hideGuiSave
                 settings.fovSetting = fovSave
+                settings.renderDistanceChunks = renderDistanceSave
 
                 GlStateManager.bindTexture(texID)
                 glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0,0, PortalFrameBufferWidth, PortalFrameBufferHeight, 0)
@@ -139,17 +144,28 @@ class Proxy: LocalPortalProxy() {
     }
 
     @SubscribeEvent
-    fun onCameraSetup(event: EntityViewRenderEvent.CameraSetup) {
+    fun onFogSetup(event: EntityViewRenderEvent.FogDensity) { // this is hacky
+        setupProjectionMatrix()
+    }
+
+    private fun setupProjectionMatrix() {
         if (renderingPortalView) { // reset projection matrix to change the nearPlane
+            val prevMatrixMode = glGetInteger(GL_MATRIX_MODE)
             GlStateManager.matrixMode(GL_PROJECTION)
             GlStateManager.loadIdentity()
             val mc = Minecraft.getMinecraft()
             val fov = mc.gameSettings.fovSetting
             val farPlaneDistance = (mc.gameSettings.renderDistanceChunks * 16).toFloat()
-            Project.gluPerspective(fov, 1f, nearPlane, farPlaneDistance * MathHelper.SQRT_2)
+            val originalAspect = mc.framebuffer.framebufferWidth.toFloat()/mc.framebuffer.framebufferHeight
+            Project.gluPerspective(fov, originalAspect, nearPlane, nearPlane+farPlaneDistance * MathHelper.SQRT_2)
 
-            GlStateManager.matrixMode(GL_MODELVIEW)
+            GlStateManager.matrixMode(prevMatrixMode)
         }
+    }
+
+    @SubscribeEvent
+    fun onCameraSetup(event: EntityViewRenderEvent.CameraSetup) {
+        setupProjectionMatrix()
     }
 
     private fun getTextureOrLoad(portalIndex: Int): Int {

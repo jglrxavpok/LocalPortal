@@ -54,7 +54,7 @@ object LocalPortalRenderer: TileEntitySpecialRenderer<TileEntityLocalPortal>() {
                 val request = PortalRenderRequest(infos, pair, pair.firstPortalOrigin == origin)
                 val portalIndex = LocalPortal.proxy.requestPortalRender(request)
                 glStencilFunc(GL_ALWAYS, 1+portalIndex, 0xFF)
-                dirVec = infos.frameType.facing.rotateY().directionVec
+                dirVec = infos.frameType.facing.directionVec
                 portalIndex
             }
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE)
@@ -88,24 +88,28 @@ object LocalPortalRenderer: TileEntitySpecialRenderer<TileEntityLocalPortal>() {
         //GlStateManager.depthMask(false)
 
         buffer.begin(GL_QUADS, DefaultVertexFormats.POSITION)
-        if(dirVec.x != 0) {
+        if(dirVec.z < 0) {
             buffer.pos(0.0, 1.0, 0.0).endVertex()
             buffer.pos(1.0, 1.0, 0.0).endVertex()
             buffer.pos(1.0, 0.0, 0.0).endVertex()
             buffer.pos(0.0, 0.0, 0.0).endVertex()
+        }
 
+        if(dirVec.z > 0) {
             buffer.pos(0.0, 0.0, 1.0).endVertex()
             buffer.pos(1.0, 0.0, 1.0).endVertex()
             buffer.pos(1.0, 1.0, 1.0).endVertex()
             buffer.pos(0.0, 1.0, 1.0).endVertex()
         }
 
-        if(dirVec.z != 0) {
+        if(dirVec.x < 0) {
             buffer.pos(0.0, 0.0, 0.0).endVertex()
             buffer.pos(0.0, 0.0, 1.0).endVertex()
             buffer.pos(0.0, 1.0, 1.0).endVertex()
             buffer.pos(0.0, 1.0, 0.0).endVertex()
+        }
 
+        if(dirVec.x > 0) {
             buffer.pos(1.0, 1.0, 0.0).endVertex()
             buffer.pos(1.0, 1.0, 1.0).endVertex()
             buffer.pos(1.0, 0.0, 1.0).endVertex()
@@ -125,9 +129,12 @@ object LocalPortalRenderer: TileEntitySpecialRenderer<TileEntityLocalPortal>() {
         GlStateManager.matrixMode(GL_PROJECTION)
         GlStateManager.pushMatrix()
         GlStateManager.loadIdentity()
+
         glEnable(GL_STENCIL_TEST)
+        //glStencilFunc(GL_EQUAL, 1+portalRenderIndex, 0xFF)
         glStencilFunc(GL_EQUAL, 1+portalRenderIndex, 0xFF)
         glStencilMask(0x0)
+
         GlStateManager.bindTexture(Proxy.Companion.PortalTextureIDs[portalRenderIndex])
         buffer.begin(GL_QUADS, DefaultVertexFormats.POSITION_TEX)
         buffer.pos(-1.0, -1.0, 1.0).tex(0.0, 0.0).endVertex()
