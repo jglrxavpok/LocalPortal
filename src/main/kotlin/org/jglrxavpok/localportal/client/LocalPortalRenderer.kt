@@ -3,6 +3,7 @@ package org.jglrxavpok.localportal.client
 import net.minecraft.client.Minecraft
 import net.minecraft.client.renderer.GLAllocation
 import net.minecraft.client.renderer.GlStateManager
+import net.minecraft.client.renderer.OpenGlHelper
 import net.minecraft.client.renderer.Tessellator
 import net.minecraft.client.renderer.tileentity.TileEntitySpecialRenderer
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats
@@ -115,6 +116,9 @@ object LocalPortalRenderer: TileEntitySpecialRenderer<TileEntityLocalPortal>() {
         glStencilFunc(GL_EQUAL, 1+portalRenderIndex, 0xFF)
         glStencilMask(0x0)
 
+        val lightmapX = OpenGlHelper.lastBrightnessX
+        val lightmapY = OpenGlHelper.lastBrightnessX
+        OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240f, 240f)
         GlStateManager.bindTexture(Proxy.Companion.PortalTextureIDs[portalRenderIndex])
         buffer.begin(GL_QUADS, DefaultVertexFormats.POSITION_TEX)
         buffer.pos(-1.0, -1.0, 1.0).tex(0.0, 0.0).endVertex()
@@ -122,6 +126,7 @@ object LocalPortalRenderer: TileEntitySpecialRenderer<TileEntityLocalPortal>() {
         buffer.pos(1.0, 1.0, 1.0).tex(1.0, 1.0).endVertex()
         buffer.pos(-1.0, 1.0, 1.0).tex(0.0, 1.0).endVertex()
         tessellator.draw()
+        OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, lightmapX, lightmapY)
         GlStateManager.enableDepth()
         GlStateManager.enableCull()
         glDisable(GL_STENCIL_TEST)
