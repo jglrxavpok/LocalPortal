@@ -54,7 +54,6 @@ class Proxy: LocalPortalProxy() {
                 return
             if(!mc.inGameHasFocus)
                 return
-            cameraEntity.world = mc.world
             val renderer = mc.entityRenderer
             val partialTicks = event.renderTickTime
             val time = System.nanoTime()
@@ -70,6 +69,9 @@ class Proxy: LocalPortalProxy() {
                 val otherFrame = PortalLocator.getFrameInfosAt(otherOrigin, mc.world)
                 if(otherFrame == NoInfos)
                     continue
+
+                val cameraEntity = EntityCamera()
+                cameraEntity.world = mc.world
 
                 val settings = mc.gameSettings
                 val renderDistanceSave = settings.renderDistanceChunks
@@ -96,8 +98,8 @@ class Proxy: LocalPortalProxy() {
                 val dx = renderViewX - origin.x -.5
                 val dz = renderViewZ - origin.z -.5
 
-                val yaw = prevRenderEntity.rotationYaw + angleDiff + 180f
-                val pitch = prevRenderEntity.rotationPitch
+                val yaw = renderViewYaw + angleDiff + 180f
+                val pitch = renderViewPitch
 
                 val portalDx = dx
                 val portalDy = dy
@@ -115,13 +117,12 @@ class Proxy: LocalPortalProxy() {
                 cameraEntity.lastTickPosZ = cameraEntity.posZ
                 cameraEntity.rotationPitch = pitch//renderViewPitch
                 cameraEntity.rotationYaw = yaw.toFloat()
-                cameraEntity.rotationYawHead = prevRenderEntity.rotationYawHead
+                cameraEntity.rotationYawHead = cameraEntity.rotationYaw
                 cameraEntity.prevRotationPitch = cameraEntity.rotationPitch
                 cameraEntity.prevRotationYaw = cameraEntity.rotationYaw
           //      settings.fovSetting = 70f
                 val dist = Math.sqrt(portalDx*portalDx + portalDz*portalDz)
                 nearPlane = dist.toFloat()-0.05f
-
 
                 // TODO: loadEntityShader is called by setRenderViewEntity -> allows for special effects on the output!
                 renderer.renderWorld(1f, System.nanoTime()+1)

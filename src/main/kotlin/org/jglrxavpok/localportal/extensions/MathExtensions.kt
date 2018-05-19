@@ -1,12 +1,16 @@
 package org.jglrxavpok.localportal.extensions
 
 import net.minecraft.util.EnumFacing
+import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Vec3d
+import net.minecraft.util.math.Vec3i
 import org.lwjgl.util.vector.Matrix4f
 import org.lwjgl.util.vector.Quaternion
 import org.lwjgl.util.vector.Vector3f
 import org.lwjgl.util.vector.Vector4f
 import java.lang.Math
+import java.util.*
+import kotlin.collections.HashSet
 
 fun Float.toRadians() = this / 180f * Math.PI.toFloat()
 fun Double.toRadians() = this / 360.0 * Math.PI * 2.0
@@ -91,3 +95,6 @@ fun Matrix4f.transform(x: Float, y: Float, z: Float, w: Float): Vector4f {
 }
 
 fun Vec3d.dot(x: Double, y: Double, z: Double) = this.x*x+this.y*y+this.z*z
+
+fun RetainBlockPosFromVecThatAlsoWorksOnServerWhyMojang(vec: Vec3i) =
+        BlockPos.PooledMutableBlockPos.retain(vec.x, vec.y, vec.z)

@@ -13,6 +13,7 @@ import net.minecraft.world.World
 import net.minecraftforge.common.ForgeChunkManager
 import org.jglrxavpok.localportal.LocalPortal
 import org.jglrxavpok.localportal.common.PortalLocator.NoInfos
+import org.jglrxavpok.localportal.extensions.RetainBlockPosFromVecThatAlsoWorksOnServerWhyMojang
 import org.jglrxavpok.localportal.extensions.angleTo
 import org.jglrxavpok.localportal.extensions.toRadians
 
@@ -81,15 +82,17 @@ class TileEntityLocalPortal: TileEntity(), ITickable {
     }
 
     fun getOriginPos(): BlockPos.PooledMutableBlockPos {
-        val location = getLocationInFrame()
+        val location = getLocationInFrame() ?: return RetainBlockPosFromVecThatAlsoWorksOnServerWhyMojang(BlockPos.ORIGIN)
         val dy = -location.second
         val facing = world.getBlockState(pos).getValue(PortalFacing).rotateY()
         val dx = -facing.directionVec.x*location.first
         val dz = -facing.directionVec.z*location.first
-        return BlockPos.PooledMutableBlockPos.retain(pos.add(dx, dy-1, dz))
+        return RetainBlockPosFromVecThatAlsoWorksOnServerWhyMojang(pos.add(dx, dy-1, dz))
     }
 
-    fun getLocationInFrame(): Pair<Int, Int> {
+    fun getLocationInFrame(): Pair<Int, Int>? {
+        if(world.getBlockState(pos).block != BlockLocalPortal)
+            return null
         var y = 0
         while(world.getBlockState(pos.up(y)).block == BlockLocalPortal) {
             y++
@@ -161,6 +164,10 @@ class TileEntityLocalPortal: TileEntity(), ITickable {
             val otherPortal = PortalLocator.getFrameInfosAt(originOfOtherPortal, world)
             if(otherPortal == NoInfos) {
                 LocalPortal.logger.error("Other portal cannot be inexistent at $originOfOtherPortal")
+                return
+            }
+            if(offset == null) {
+                LocalPortal.logger.error("No portal block at location $pos !")
                 return
             }
             val facing = otherPortal.frameType.facing
