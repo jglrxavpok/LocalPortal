@@ -103,13 +103,13 @@ class Proxy: LocalPortalProxy() {
                 val portalDy = dy
                 val portalDz = dz
 
-                val cos = MathHelper.cos(angleDiff.toRadians().toFloat())
-                val sin = MathHelper.sin(angleDiff.toRadians().toFloat())
+                val cos = MathHelper.cos(-angleDiff.toRadians().toFloat())
+                val sin = MathHelper.sin(-angleDiff.toRadians().toFloat())
                 val rotatedDx = portalDx * cos + portalDz * sin
                 val rotatedDz = -portalDx * sin + portalDz * cos
-                cameraEntity.posX = otherOrigin.x+.5+rotatedDx + otherFacing.directionVec.x
+                cameraEntity.posX = otherOrigin.x+.5-rotatedDx + otherFacing.directionVec.x
                 cameraEntity.posY = otherOrigin.y.toDouble()+.5f+portalDy + prevRenderEntity.eyeHeight
-                cameraEntity.posZ = otherOrigin.z+.5+rotatedDz + otherFacing.directionVec.z
+                cameraEntity.posZ = otherOrigin.z+.5-rotatedDz + otherFacing.directionVec.z
                 cameraEntity.lastTickPosX = cameraEntity.posX
                 cameraEntity.lastTickPosY = cameraEntity.posY
                 cameraEntity.lastTickPosZ = cameraEntity.posZ
