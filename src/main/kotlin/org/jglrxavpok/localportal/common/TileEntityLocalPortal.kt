@@ -20,20 +20,9 @@ import org.jglrxavpok.localportal.extensions.toRadians
 class TileEntityLocalPortal: TileEntity(), ITickable {
 
     var portalInfos = NoInfos
-    private var ticket: ForgeChunkManager.Ticket? = null
     private val originOfOtherPortal = BlockPos.MutableBlockPos(BlockPos.ORIGIN)
     private val lastKnownOrigin = BlockPos.MutableBlockPos(BlockPos.ORIGIN)
     private val prevOtherPos = BlockPos.MutableBlockPos(BlockPos.ORIGIN)
-
-    override fun setWorld(worldIn: World?) {
-        super.setWorld(worldIn)
-        if(worldIn != null) {
-            if(ticket != null)
-                ForgeChunkManager.releaseTicket(ticket)
-            ticket = ForgeChunkManager.requestTicket(LocalPortal, world, ForgeChunkManager.Type.NORMAL)
-            ForgeChunkManager.forceChunk(ticket, ChunkPos(pos))
-        }
-    }
 
     override fun update() {
 
@@ -204,11 +193,8 @@ class TileEntityLocalPortal: TileEntity(), ITickable {
     }
 
     override fun invalidate() {
-        ForgeChunkManager.releaseTicket(ticket)
-        if(!world.isRemote) {
-            if(lastKnownOrigin.x == pos.x && lastKnownOrigin.y+1 == pos.y && lastKnownOrigin.z == pos.z) {
-                PortalLocator.breakPortalPair(portalInfos.portalID, lastKnownOrigin, world.provider.dimension, world)
-            }
+        if(lastKnownOrigin.x == pos.x && lastKnownOrigin.y+1 == pos.y && lastKnownOrigin.z == pos.z) {
+            PortalLocator.breakPortalPair(portalInfos.portalID, lastKnownOrigin, world.provider.dimension, world)
         }
         super.invalidate()
     }

@@ -20,6 +20,7 @@ import org.jglrxavpok.localportal.common.*
 import net.minecraft.init.Blocks as MCBlocks
 import net.minecraft.init.Items as MCItems
 import net.minecraftforge.common.capabilities.CapabilityInject
+import net.minecraftforge.event.world.ChunkEvent
 
 @Mod(modLanguageAdapter = "net.shadowfacts.forgelin.KotlinAdapter", modid = LocalPortal.ModID, dependencies = "required-after:forgelin;",
         name = "Local Portal", version = "1.0.0-indev", updateJSON = "https://raw.githubusercontent.com/jglrxavpok/LocalPortal/master/updateCheck.json")
@@ -55,9 +56,7 @@ object LocalPortal {
     @Mod.EventHandler
     fun init(event: FMLInitializationEvent) {
         proxy.init()
-        ForgeChunkManager.setForcedChunkLoadingCallback(this) { tickets, world ->
-
-        }
+        ForgeChunkManager.setForcedChunkLoadingCallback(this, ChunkLoading)
     }
 
     @SubscribeEvent
@@ -65,5 +64,11 @@ object LocalPortal {
         e.registry.registerAll(BlockLocalPortal)
         GameRegistry.registerTileEntity(TileEntityLocalPortal::class.java, BlockLocalPortal.registryName.toString())
     }
+
+    @SubscribeEvent
+    fun onChunkUnload(event: ChunkEvent.Unload) {
+        LocalPortal.logger.info("Unloading chunk at ${event.chunk.pos}")
+    }
+
 
 }

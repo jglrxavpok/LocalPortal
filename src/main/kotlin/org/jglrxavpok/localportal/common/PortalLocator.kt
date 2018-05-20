@@ -14,7 +14,7 @@ object PortalLocator {
 
     const val PairSaveDataID = "${LocalPortal.ModID}_portal_pair"
 
-    private fun dataID(portalID: Int) = "${PairSaveDataID}_$portalID"
+    fun dataID(portalID: Int) = "${PairSaveDataID}_$portalID"
 
     fun getPortalPair(portalID: Int, world: World): PortalPair? {
         return world.loadData(PortalPair::class.java, dataID(portalID)) as? PortalPair
@@ -181,8 +181,11 @@ object PortalLocator {
                 pair.hasSecond = true
             }
             updatePortalPair(pair, world, dimensionID)
+            ChunkLoading.onPortalCreation(infos.portalID, world, pair)
         }
 
+        if(world.isRemote)
+            return true
         // place blocks
         val portalFacing = infos.frameType.facing
         val facing = infos.frameType.facing.rotateY()
@@ -209,6 +212,9 @@ object PortalLocator {
 
     fun breakPortalPair(portalID: Int, originToRemove: BlockPos, dimensionID: Int, world: World) {
         val pair = getPortalPair(portalID, world) ?: return // if null, nothing to do
+        if(pair.hasSecond) { // fully linked portals
+            ChunkLoading.onPortalRemoval(portalID, world, pair) // call before changing portal origins
+        }
         if(pair.firstPortalOrigin == originToRemove) {
             if(pair.hasSecond) {
                 pair.firstPortalOrigin.setPos(pair.secondPortalOrigin)

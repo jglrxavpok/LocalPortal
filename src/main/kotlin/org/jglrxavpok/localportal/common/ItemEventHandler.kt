@@ -21,8 +21,6 @@ object ItemEventHandler {
     @SubscribeEvent
     fun onEntityInteract(event: PlayerInteractEvent.RightClickBlock) {
         val player = event.entityPlayer
-        if(player.world.isRemote)
-            return
         val stack = event.itemStack
         if(stack.item == Items.DIAMOND) {
             val infos = PortalLocator.getFrameInfosAt(event.pos, event.world)

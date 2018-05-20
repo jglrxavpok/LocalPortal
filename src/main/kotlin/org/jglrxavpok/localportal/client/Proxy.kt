@@ -206,18 +206,19 @@ class Proxy: LocalPortalProxy() {
     }
 
     override fun requestPortalRender(portalRenderRequest: PortalRenderRequest): Int {
-        if(renderingPortalView) {
-            return 0
-        }
         if(portalRenderRequest == EmptyPortalRequest) {
             return 0
         }
         val same = portalRenderRequests.indexOfFirst { it == portalRenderRequest }
         if(same == -1) {
+            if(renderingPortalView) {
+                return 0
+            }
             val index = portalRenderRequests.size
             portalRenderRequests.add(portalRenderRequest)
             return index
         }
         return same
     }
+
 }
