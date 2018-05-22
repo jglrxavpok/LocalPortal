@@ -117,7 +117,7 @@ object LocalPortalRenderer: TileEntitySpecialRenderer<TileEntityLocalPortal>() {
         glStencilMask(0x0)
 
         val lightmapX = OpenGlHelper.lastBrightnessX
-        val lightmapY = OpenGlHelper.lastBrightnessX
+        val lightmapY = OpenGlHelper.lastBrightnessY
         OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240f, 240f)
         GlStateManager.bindTexture(Proxy.Companion.PortalTextureIDs[portalRenderIndex])
         buffer.begin(GL_QUADS, DefaultVertexFormats.POSITION_TEX)
