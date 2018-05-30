@@ -3,11 +3,14 @@ package org.jglrxavpok.localportal.common
 import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.util.math.BlockPos
 import net.minecraft.world.storage.WorldSavedData
+import org.jglrxavpok.localportal.common.PortalLocator.NoInfos
 
 open class PortalPair(name: String): WorldSavedData(name) {
 
     val firstPortalOrigin: BlockPos.MutableBlockPos = BlockPos.MutableBlockPos(BlockPos.ORIGIN)
     val secondPortalOrigin: BlockPos.MutableBlockPos = BlockPos.MutableBlockPos(BlockPos.ORIGIN)
+    var firstFrameInfos = NoInfos
+    var secondFrameInfos = NoInfos
     var hasSecond = false
     var isClean = false
 
@@ -18,6 +21,9 @@ open class PortalPair(name: String): WorldSavedData(name) {
         compound.setInteger("secondX", secondPortalOrigin.x)
         compound.setInteger("secondY", secondPortalOrigin.y)
         compound.setInteger("secondZ", secondPortalOrigin.z)
+
+        compound.setTag("firstFrameInfos", firstFrameInfos.toNBT(NBTTagCompound()))
+        compound.setTag("secondFrameInfos", secondFrameInfos.toNBT(NBTTagCompound()))
 
         compound.setBoolean("hasSecond", hasSecond)
         compound.setBoolean("isClean", isClean)
@@ -30,5 +36,7 @@ open class PortalPair(name: String): WorldSavedData(name) {
 
         hasSecond = compound.getBoolean("hasSecond")
         isClean = compound.getBoolean("isClean")
+        firstFrameInfos = PortalLocator.PortalFrameInfos.fromNBT(compound.getCompoundTag("firstFrameInfos"))
+        secondFrameInfos = PortalLocator.PortalFrameInfos.fromNBT(compound.getCompoundTag("secondFrameInfos"))
     }
 }

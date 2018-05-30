@@ -1,6 +1,7 @@
 package org.jglrxavpok.localportal.client
 
 import net.minecraft.client.Minecraft
+import net.minecraft.client.multiplayer.WorldClient
 import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.util.math.MathHelper
 import net.minecraftforge.client.event.EntityViewRenderEvent
@@ -64,9 +65,14 @@ class Proxy: LocalPortalProxy() {
                     continue
                 val origin = if(request.isFirstInPair) request.pair.firstPortalOrigin else request.pair.secondPortalOrigin
                 val otherOrigin = if(!request.isFirstInPair) request.pair.firstPortalOrigin else request.pair.secondPortalOrigin
-                val otherFrame = PortalLocator.getFrameInfosAt(otherOrigin, mc.world)
-                if(otherFrame == NoInfos)
-                    continue
+
+                var otherFrame = PortalLocator.getFrameInfosAt(otherOrigin, mc.world)
+                if(otherFrame == NoInfos) {
+                    val pair = PortalLocator.getPortalPair(request.infos.portalID, mc.world) ?: continue
+                    otherFrame = if(request.isFirstInPair) pair.secondFrameInfos else pair.firstFrameInfos
+                    if(otherFrame == NoInfos)
+                        continue
+                }
 
                 val cameraEntity = EntityCamera()
                 cameraEntity.world = mc.world
@@ -110,6 +116,10 @@ class Proxy: LocalPortalProxy() {
                 cameraEntity.posX = otherOrigin.x+.5-rotatedDx + otherFacing.directionVec.x
                 cameraEntity.posY = otherOrigin.y.toDouble()+.5f+portalDy + prevRenderEntity.eyeHeight
                 cameraEntity.posZ = otherOrigin.z+.5-rotatedDz + otherFacing.directionVec.z
+
+                cameraEntity.chunkCoordX = cameraEntity.position.x shr 4
+                cameraEntity.chunkCoordY = cameraEntity.position.y shr 4
+                cameraEntity.chunkCoordZ = cameraEntity.position.z shr 4
                 cameraEntity.lastTickPosX = cameraEntity.posX
                 cameraEntity.lastTickPosY = cameraEntity.posY
                 cameraEntity.lastTickPosZ = cameraEntity.posZ
@@ -118,12 +128,13 @@ class Proxy: LocalPortalProxy() {
                 cameraEntity.rotationYawHead = cameraEntity.rotationYaw
                 cameraEntity.prevRotationPitch = cameraEntity.rotationPitch
                 cameraEntity.prevRotationYaw = cameraEntity.rotationYaw
+
           //      settings.fovSetting = 70f
                 val dist = Math.sqrt(portalDx*portalDx + portalDz*portalDz)
                 nearPlane = dist.toFloat()-0.05f
 
                 // TODO: loadEntityShader is called by setRenderViewEntity -> allows for special effects on the output!
-                renderer.renderWorld(1f, System.nanoTime()+1)
+                renderer.renderWorld(1f, System.nanoTime() + (1000000000L / Math.max(30, mc.gameSettings.limitFramerate)))
 
                 nearPlane = 0.05f
 

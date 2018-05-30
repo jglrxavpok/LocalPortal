@@ -171,12 +171,14 @@ object PortalLocator {
             if(pair.isClean) { // portals with given ID existed but were destroyed
                 pair.firstPortalOrigin.setPos(pos)
                 pair.hasSecond = false
+                pair.firstFrameInfos = infos
                 pair.isClean = false
             } else {
                 if(pair.hasSecond)
                     return false
                 if(pair.firstPortalOrigin == pos)
                     return false
+                pair.secondFrameInfos = infos
                 pair.secondPortalOrigin.setPos(pos)
                 pair.hasSecond = true
             }
@@ -229,9 +231,10 @@ object PortalLocator {
     }
 
     data class PortalFrameInfos(val frameType: PortalFrame, val portalID: Int) {
-        fun toNBT(compound: NBTTagCompound) {
+        fun toNBT(compound: NBTTagCompound): NBTTagCompound {
             compound.setInteger("frameFacing", frameType.ordinal)
             compound.setInteger("portalID", portalID)
+            return compound
         }
 
         companion object {
