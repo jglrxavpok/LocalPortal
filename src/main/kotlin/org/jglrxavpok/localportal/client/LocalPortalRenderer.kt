@@ -1,13 +1,10 @@
 package org.jglrxavpok.localportal.client
 
-import net.minecraft.client.Minecraft
-import net.minecraft.client.renderer.GLAllocation
 import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.client.renderer.OpenGlHelper
 import net.minecraft.client.renderer.Tessellator
 import net.minecraft.client.renderer.tileentity.TileEntitySpecialRenderer
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats
-import net.minecraft.init.Blocks
 import net.minecraft.util.ResourceLocation
 import net.minecraft.util.math.Vec3i
 import org.jglrxavpok.localportal.LocalPortal
@@ -15,20 +12,11 @@ import org.jglrxavpok.localportal.common.PortalLocator
 import org.jglrxavpok.localportal.common.PortalLocator.NoInfos
 import org.jglrxavpok.localportal.common.PortalRenderRequest
 import org.jglrxavpok.localportal.common.TileEntityLocalPortal
-import org.jglrxavpok.localportal.extensions.times
-import org.jglrxavpok.localportal.extensions.transform
 import org.lwjgl.opengl.GL11.*
-import org.lwjgl.util.vector.Matrix4f
-import org.lwjgl.util.vector.Vector3f
-import kotlin.math.abs
 
 object LocalPortalRenderer: TileEntitySpecialRenderer<TileEntityLocalPortal>() {
 
     val END_SKY_TEXTURE = ResourceLocation("textures/environment/end_sky.png")
-    val ModelviewBuffer = GLAllocation.createDirectFloatBuffer(16)
-    val ProjectionBuffer = GLAllocation.createDirectFloatBuffer(16)
-    private val projectionMatrix = Matrix4f()
-    private val modelviewMatrix = Matrix4f()
 
     override fun render(te: TileEntityLocalPortal, x: Double, y: Double, z: Double, partialTicks: Float, destroyStage: Int, alpha: Float) {
         GlStateManager.pushMatrix()
@@ -37,8 +25,6 @@ object LocalPortalRenderer: TileEntitySpecialRenderer<TileEntityLocalPortal>() {
         val portalID = infos.portalID
         val pair = PortalLocator.getPortalPair(portalID, world)
         val origin = te.getOriginPos()
-
-        val mc = Minecraft.getMinecraft()
 
         var dirVec: Vec3i
         glDisable(GL_SCISSOR_TEST)

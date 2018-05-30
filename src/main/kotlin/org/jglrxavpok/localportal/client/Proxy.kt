@@ -44,8 +44,6 @@ class Proxy: LocalPortalProxy() {
     @SubscribeEvent
     fun preRenderWorld(event: TickEvent.RenderTickEvent) {
         if(event.phase == TickEvent.Phase.START) {
-
-            // TODO: update/fill textures
             val mc = Minecraft.getMinecraft()
             val framebuffer = mc.framebuffer
             if(!framebuffer.isStencilEnabled)

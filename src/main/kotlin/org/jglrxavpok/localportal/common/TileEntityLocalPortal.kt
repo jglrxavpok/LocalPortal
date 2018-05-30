@@ -13,6 +13,7 @@ import net.minecraft.world.World
 import net.minecraftforge.common.ForgeChunkManager
 import org.jglrxavpok.localportal.LocalPortal
 import org.jglrxavpok.localportal.common.PortalLocator.NoInfos
+import org.jglrxavpok.localportal.common.network.C1PortalPairRequest
 import org.jglrxavpok.localportal.extensions.RetainBlockPosFromVecThatAlsoWorksOnServerWhyMojang
 import org.jglrxavpok.localportal.extensions.angleTo
 import org.jglrxavpok.localportal.extensions.toRadians
@@ -24,6 +25,8 @@ class TileEntityLocalPortal: TileEntity(), ITickable {
     private val lastKnownOrigin = BlockPos.MutableBlockPos(BlockPos.ORIGIN)
     private val prevOtherPos = BlockPos.MutableBlockPos(BlockPos.ORIGIN)
 
+    private var ticksSinceLastRequest = 1000
+
     override fun update() {
 
         val prevPortalID = portalInfos.portalID
@@ -34,9 +37,18 @@ class TileEntityLocalPortal: TileEntity(), ITickable {
             return
         }
         portalInfos = newInfos
-        if(world.isRemote)
+        val pair = PortalLocator.getPortalPair(portalInfos.portalID, world)
+        if(world.isRemote) {
+            ticksSinceLastRequest++
+            if(portalInfos != NoInfos && pair == null && ticksSinceLastRequest >= 20 * 5) {
+                ticksSinceLastRequest = 0
+                LocalPortal.network.sendToServer(C1PortalPairRequest(portalInfos.portalID))
+                println("update requested")
+            }
             return
-        val pair = PortalLocator.getPortalPair(portalInfos.portalID, world) ?: return
+        }
+        if(pair == null)
+            return
 
         val origin = getOriginPos()
         originOfOtherPortal.setPos(origin) // reset in case other portal gets destroyed
